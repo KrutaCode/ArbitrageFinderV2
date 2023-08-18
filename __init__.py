@@ -23,14 +23,15 @@ def oracle_test(search_ticker: bool = True):
     #address = "0x514910771af9ca656af840dff83e8264ecf986ca"
     #arb = ArbitrageFinder()
    
-    #trending_tickers = ["pepe", ""]
+    #trending_tickers = ["pepe", "sei"]
     #arbitrage_canidates = arb.find_arbitrage_mixed(trending_tickers, search_ticker)
     #arb.display_arbitrage(arbitrage_canidates)
     #arb.coin_oracle.get_coinname_by_address(address, network="optimism")
     arb = ArbitrageFinderV2()
     trending_tickers = arb.coin_oracle.get_trending_tickers()
-    trending_tickers = trending_tickers[:2]
+    #trending_tickers = trending_tickers[:2]
     arb.find_arbitrage_routes(trending_tickers)  
+    arb.get_top_routes(limit=20)
 
 
 

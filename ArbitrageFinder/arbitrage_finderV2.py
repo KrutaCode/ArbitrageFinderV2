@@ -14,19 +14,34 @@ class ArbitrageFinderV2:
     def __init__(self) -> None:
         self.coin_oracle = Oracle.coin_oracle.CoinOracle()
         self.stable_coins = ["USD", "USDC", "USDT"]
-
-        self.excluded_exchanges = ["XT.COM"]
+        self.arbitrage_routes = {}
+        self.excluded_exchanges = ["XT.COM", "BitBNS", "SafeTrade", "Bitfinex"]
+        self.excluded_coins = ["TWT"]
     '''-----------------------------------'''
     def find_arbitrage_routes(self, coin_list: list, arbitrage_minimum: float = 0.0):
+        '''
+        Takes a list of coins as the parameter. It will loop through each coin and find the most efficient paths
+        between exchanges to maximize arbitrage profits. 
+        
+        coin_list: list of coin names. 
+        arbitrage_minimum: The minimum arbitrage spread a route must meet to be included in the data. 
+        '''
 
-        exchange_data = []
+        # Loop through list of coins. 
         for coin in coin_list:
+
+            print(f"coin: {coin}")
             # Get the coin id.
             coin_id = coin["id"]
+
+            print(f"Coin: {coin_id}")
             # Get the prices from the exchanges that it trades on. 
             exchange_price_data = self.coin_oracle.get_exchange_prices(coin_id)
             # Compare the prices on each exchange. 
-            self.compare_exchange_prices(exchange_price_data, arbitrage_minimum)
+            data = self.compare_exchange_prices(exchange_price_data, arbitrage_minimum)
+            self.arbitrage_routes[coin_id] = data
+ 
+
 
     '''-----------------------------------'''
     def compare_exchange_prices(self, exchange_data: list, arbitrage_minimum: float = 0.0):
@@ -36,7 +51,6 @@ class ArbitrageFinderV2:
         '''
         
         path_performance = {}
-        #print(f"Exchange Data: {exchange_data}")
         exchanges = {}
         for i in range(len(exchange_data)):
             # Tracks performance of the path. 
@@ -153,14 +167,9 @@ class ArbitrageFinderV2:
             except ZeroDivisionError:
                 pass
 
-
-        
-        
-
         # Add the perfomance value to the associated exchange key. 
         final_data = {}
         for key, value in exchanges.items():
-            print(f"Value: {value}")
             # If key does not exist in dict, assign empty values to them. 
             if key not in final_data:
                 final_data[key] = {"path" : []}
@@ -168,7 +177,6 @@ class ArbitrageFinderV2:
                 final_data[key] = {"positive_routes": 0}
                 final_data[key] = {"negative_routes": 0}
                 final_data[key] = {"total_routes": 0}
-                
             
             # Add values to relevant paths. 
             final_data[key]["path"] = sorted(value, key=lambda x: x["perc_diff"], reverse=True)
@@ -177,11 +185,45 @@ class ArbitrageFinderV2:
             final_data[key]["negtive_routes"] = path_performance[key]["negative_arb"]
             final_data[key]["total_routes"] = path_performance[key]["positive_arb"] + path_performance[key]["negative_arb"]
             
-
-        print(json.dumps(final_data, indent=4))
-            
+        return final_data
 
     '''-----------------------------------'''
+    def get_top_routes(self, coin_list: list = [], limit: int = 10):
+        # Check if there are arbitrage routes. Otherwise, set new routes. 
+        if self.arbitrage_routes == {}:
+            self.find_arbitrage_routes(coin_list)
+        
+
+        # List to hold all routes. 
+        all_routes = []
+
+        # Iterate through each coin. 
+        for coin, value in self.arbitrage_routes.items():
+
+            for k, v in value.items():
+                for i in v["path"]:
+                    x, y = i["reference_exchange"]["pair"].split("/")
+                    if x not in self.excluded_coins and y not in self.excluded_coins:
+                        all_routes.append(i)
+        
+        # Sort the routes 
+        all_routes = sorted(all_routes, key=lambda x: x["perc_diff"], reverse=True)
+        # Get the length to get the total number of routes. 
+        num_of_routes = len(all_routes)
+        # Check if the number of routes is less than the amount of routes requested. 
+        if num_of_routes < limit:
+            # If it is less than, default the value to the length of "all_routes". 
+            # This way if the user requests more paths than exist, the whole list will be returned. 
+            limit = num_of_routes
+
+
+        top_routes = all_routes[:limit]
+
+        print(f"Top: {json.dumps(top_routes, indent=4)}")
+
+        print(f"[Total Routes Searched]: {num_of_routes}")
+
+
     '''-----------------------------------'''
     def get_exchange_type(self, input_str):
         '''
