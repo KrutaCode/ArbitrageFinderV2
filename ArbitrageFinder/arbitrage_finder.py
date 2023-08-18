@@ -162,7 +162,7 @@ class ArbitrageFinder:
                         # Calculate the percentage difference between the target price and the reference price. 
                         perc_diff = ((target_price/ref_price) - 1) * 100
 
-                        if self.is_address(target_base):
+                        if self.is_address(target_base): 
                             target_exchange_type = "DEX"
                         else:
                             target_exchange_type = "CEX"
