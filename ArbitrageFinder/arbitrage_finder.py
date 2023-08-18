@@ -26,6 +26,9 @@ class ArbitrageFinder:
         self.stable_coins = ["USD", "USDC", "USDT"]
         self.excluded_exchanges = ["XT.COM"]
 
+        # List of coins that were failed to be retrieved.
+        self.failed_to_retrieve = []
+
 
     
     '''-----------------------------------'''
@@ -39,7 +42,6 @@ class ArbitrageFinder:
     '''-----------------------------------'''
     def find_arbitrage_cex(self):
         '''
-        
         Description: Retrieves data from the centralized exchanges and compares their prices. 
         Each exchange will be compared against eachother and measure if there is any notable %  difference. 
         
@@ -64,7 +66,6 @@ class ArbitrageFinder:
 
                         if symbol not in compared_data:
                             compared_data[symbol] = []
-
 
                         compared_data[symbol].append({
                             "exchange1" : exchange1,
@@ -105,7 +106,11 @@ class ArbitrageFinder:
             coin_price_data = self.coin_oracle.get_exchange_prices(coin_id, search_ticker=False)
             # Compare each exchange against eachother.
             exchange_routes = self.compare_exchange_prices(coin_price_data)
-            exchange_data.append(exchange_routes)
+            # Check that the list is not empty before adding it. 
+            if exchange_routes != []:
+                exchange_data.append(exchange_routes)
+            else:
+                self.failed_to_retrieve.append(coin_id)
 
         return exchange_data
     '''-----------------------------------'''
@@ -126,7 +131,7 @@ class ArbitrageFinder:
 
             # Check if the reference price is in scientific notation.
             if self.is_scientific_notation(ref_price):
-                ref_price = format(ref_price, ".20f")
+                ref_price = float(format(ref_price, ".20f"))
             
             if self.is_address(ref_base):
                 ref_exchange_type = "DEX"
@@ -150,7 +155,8 @@ class ArbitrageFinder:
 
                         # Check if the price is in scientific notation.
                         if self.is_scientific_notation(target_price):
-                            target_price = format(target_price, ".20f")
+                            target_price = float(format(target_price, ".20f"))
+
 
 
                         # Calculate the percentage difference between the target price and the reference price. 
@@ -185,7 +191,6 @@ class ArbitrageFinder:
         sorted_routes = self.sort_routes(total_routes)
         # Sort the outer list. 
         sorted_routes.sort(key=lambda x: x[0]["perc_diff"], reverse=True)
-        print(f"{sorted_routes}")
         return sorted_routes
     '''-----------------------------------'''
     def sort_routes(self, route):
@@ -194,8 +199,9 @@ class ArbitrageFinder:
         return sorted_routes
     '''-----------------------------------'''
     def is_address(self, input_str: str) -> bool:
-
+        # Check if the string is longer than at least 8 characters.
         if len(input_str) >= 8:
+            # Check if string starts with common address characters. 
             if input_str.startswith("0x") or input_str.startswith("0X"):
                 return True
         return False
@@ -226,24 +232,29 @@ class ArbitrageFinder:
         for item in data:
             ticker = item[0][0]["reference_pair"].split("/")[0]
             for i in range(include_rows):
-                exchange_path1 = item[0][i]["exchange_path"]
-                exchange_type = item[0][i]["exchange_types"]
-                base_price = item[0][i]["reference_price"]
-                target_price = item[0][i]["target_price"]
-                perc_diff = "{:.2f}".format(item[0][i]["perc_diff"])
+                try:
+                    exchange_path1 = item[0][i]["exchange_path"]
+                    exchange_type = item[0][i]["exchange_types"]
+                    base_price = item[0][i]["reference_price"]
+                    target_price = item[0][i]["target_price"]
+                    perc_diff = "{:.2f}".format(item[0][i]["perc_diff"])
 
 
 
-                print(f"""
-----------------------------------------
-{ticker}
-Path: {exchange_path1}
-Type: {exchange_type}
-Base Price: {base_price}
-Target Price: {target_price}
-% Difference: {perc_diff} %
+                    print(f"""
+    ----------------------------------------
+    {ticker}
+    Path: {exchange_path1}
+    Type: {exchange_type}
+    Base Price: {base_price}
+    Target Price: {target_price}
+    % Difference: {perc_diff} %
 
-                """)
+                    """)
+                # Typically occurs if there are less exchange routes available is less 
+                # than the number of rows to include. Because you cannot include 3 rows if only 1 path exists.
+                except IndexError:
+                    pass
 
 
 
