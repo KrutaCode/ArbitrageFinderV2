@@ -1,6 +1,8 @@
 
 import requests
 
+import random
+
 import threading
 import queue
 
@@ -11,11 +13,20 @@ proxies = {
     "united_states" : "https://52.183.8.192:3128"
 }
 
-
+valid_proxies_text_file = "D:\\Coding\\VisualStudioCode\\Projects\\Python\\ArbitrageFinderV2\\ProxyServer\\valid_proxies.txt"
 
 class ServerManager:
     def __init__(self) -> None:
-        self.cur_proxy = None
+        # Read the valid proxy addresses from the text file. 
+        with open(valid_proxies_text_file, "r") as f:
+            self.proxies = f.read().split("\n")
+
+        # Variable to track how many proxies are currently available. 
+        self.num_of_proxies = len(self.proxies)
+        # Select a proxy from a randomly generated number. The number will stay in bounds with the number of valid proxies. 
+        self.cur_proxy_index = random.randint(0, self.num_of_proxies-1)
+        # Assign address from the index. 
+        self.cur_proxy = self.proxies[self.cur_proxy_index]
     '''-----------------------------------'''
     def create_proxy_server(self, region: str = "united_states"):
         proxy = {

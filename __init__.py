@@ -21,10 +21,16 @@ from ProxyServer.proxy_server import ServerManager
 def oracle_test(search_ticker: bool = True):
 
     arb = ArbitrageFinderV2()
-    trending_tickers = arb.coin_oracle.get_trending_tickers()
+    tickers = arb.coin_oracle.get_top_gainers()
+
+    proxy = ServerManager()
+
+    
+    #print(f"Tickers: {tickers}")
+    #trending_tickers = arb.coin_oracle.get_trending_tickers()
     #trending_tickers = trending_tickers[:2]
-    arb.find_arbitrage_routes(trending_tickers)  
-    arb.write_top_routes(limit=1000)
+    #arb.find_arbitrage_routes(trending_tickers)  
+    #arb.write_top_routes(limit=1000)
 
 
 

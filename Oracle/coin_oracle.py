@@ -126,7 +126,10 @@ class CoinOracle:
     '''-----------------------------------  Data Retrieval Operations  -----------------------------------'''
     
     '''-----------------------------------'''
-    def get_trending_tickers(self):
+    def get_trending_tickers(self) -> list:
+        '''
+        Get the list of currently trending tickers on https://www.coingecko.com/
+        '''
 
         trending_tickers = self.cg.get_search_trending()
         extracted_data = []
@@ -143,6 +146,32 @@ class CoinOracle:
         
         return extracted_data
     '''-----------------------------------'''
+    def get_top_gainers(self, limit: int = 100) -> list:
+        '''
+        Get the list of the current top gaining coins on https://www.coingecko.com/
+        '''
+        # Endpoint URL for getting top gainers
+        url = "https://api.coingecko.com/api/v3/coins/markets"
+
+        # Parameters for the request
+        params = {
+            "vs_currency": "usd",   # You can change the currency here if needed
+            "order": "percent_change_24h_desc",  # Sort by market cap in descending order
+            "per_page": limit,   # Number of results per page
+            "page": 1,        # Page number
+        }
+
+        response = requests.get(url, params=params)
+
+        if response.status_code == 200:
+            top_gainers = response.json()
+
+            top_gainers = sorted(top_gainers, key=lambda x: x["price_change_percentage_24h"], reverse=True)
+            
+            return top_gainers
+    '''-----------------------------------'''
+    '''-----------------------------------'''
+    
     def get_coin_list(self):
         return self.cg.get_coins_list()
     '''-----------------------------------'''
