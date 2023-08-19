@@ -1,6 +1,8 @@
 
 import requests
 
+import threading
+import queue
 
 
 
@@ -21,6 +23,14 @@ class ServerManager:
         }
         self.cur_proxy = proxy
     '''-----------------------------------'''
+    def check_valid_proxies(self):
+        q = queue.Queue()
+        valid_proxies = []
+        
+        with open("proxies.txt", "r") as f:
+            proxies = f.read().split("\n")
+            for p in proxies:
+                q.put(p)
     '''-----------------------------------'''
     '''-----------------------------------'''
     '''-----------------------------------'''
