@@ -18,9 +18,9 @@ class ArbitrageFinderV2:
         self.coin_oracle = Oracle.coin_oracle.CoinOracle()
         self.stable_coins = ["USD", "USDC", "USDT"]
         self.arbitrage_routes = {}
-        self.excluded_exchanges =  ["Binance", "Biswap","BitBNS", "Bitfinex", "Bitkub", "Bithumb" "Bybit",
-                                    "CoinDCX", "CoinTiger", "Energiswap", "HitBTC", "Icrypex", "Indodax",
-                                    "SafeTrade", "THENA FUSION" "Upbit", "WarzirX" "XT.COM", "ZebPay"]
+        self.excluded_exchanges =  ["Binance", "Biswap","BitBNS", "Bitfinex", "Bitkub", "Bithumb", "Bybit",
+                                    "Cetus", "CoinDCX", "CoinTiger", "Energiswap", "HitBTC", "Icrypex", "Indodax",
+                                    "SafeTrade", "THENA FUSION", "Upbit", "WarzirX", "XT.COM", "ZebPay"]
         
         self.excluded_coins = ["INJ", "TWT"]
     '''-----------------------------------'''
@@ -69,7 +69,8 @@ class ArbitrageFinderV2:
 
             # Check that the reference exchange is not in the "excluded_exchanges list". 
             if ref_exchange_name not in self.excluded_exchanges and ref_exchange_name != "THENA FUSION":
-
+                if ref_exchange_name == "Upbit":
+                    print("TRUEEEEEEEEEEEEEEEEEEEE")
 
                 ref_price = ref_exchange["last"]
                 ref_stale_state = ref_exchange["is_anomaly"]
