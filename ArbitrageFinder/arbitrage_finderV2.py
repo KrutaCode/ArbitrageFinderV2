@@ -1,13 +1,16 @@
 
 import json
 
+# Time and date related imports
+import time
+import datetime as dt
 
 # Import oracles
 import Oracle.coin_oracle
 
 
 
-
+arbitrage_text_file = "D:\\Coding\\VisualStudioCode\\Projects\\Python\\ArbitrageFinderV2\\arbitrage_routes.txt"
 
 
 class ArbitrageFinderV2:
@@ -15,8 +18,11 @@ class ArbitrageFinderV2:
         self.coin_oracle = Oracle.coin_oracle.CoinOracle()
         self.stable_coins = ["USD", "USDC", "USDT"]
         self.arbitrage_routes = {}
-        self.excluded_exchanges = ["XT.COM", "BitBNS", "SafeTrade", "Bitfinex"]
-        self.excluded_coins = ["TWT"]
+        self.excluded_exchanges =  ["Binance", "Biswap","BitBNS", "Bitfinex", "Bitkub", "Bithumb" "Bybit",
+                                    "CoinDCX", "CoinTiger", "Energiswap", "HitBTC", "Icrypex", "Indodax",
+                                    "SafeTrade", "THENA FUSION" "Upbit", "WarzirX" "XT.COM", "ZebPay"]
+        
+        self.excluded_coins = ["INJ", "TWT"]
     '''-----------------------------------'''
     def find_arbitrage_routes(self, coin_list: list, arbitrage_minimum: float = 0.0):
         '''
@@ -29,12 +35,8 @@ class ArbitrageFinderV2:
 
         # Loop through list of coins. 
         for coin in coin_list:
-
-            print(f"coin: {coin}")
             # Get the coin id.
             coin_id = coin["id"]
-
-            print(f"Coin: {coin_id}")
             # Get the prices from the exchanges that it trades on. 
             exchange_price_data = self.coin_oracle.get_exchange_prices(coin_id)
             # Compare the prices on each exchange. 
@@ -50,6 +52,10 @@ class ArbitrageFinderV2:
         It will then calculate the difference between the coins in terms of a percentage. 
         '''
         
+        datetime_string = str(dt.datetime.now().isoformat())
+        date_time_parts = datetime_string.split("T")
+        date_without_fraction = date_time_parts[0] + " " + date_time_parts[1].split(".")[0]
+        time_retrieved = date_without_fraction
         path_performance = {}
         exchanges = {}
         for i in range(len(exchange_data)):
@@ -60,94 +66,103 @@ class ArbitrageFinderV2:
             ref_base, ref_target = ref_exchange["base"], ref_exchange["target"]
             # Get the name of the exchange and price from the exhcange.
             ref_exchange_name = ref_exchange["market"]["name"]
-            ref_price = ref_exchange["last"]
-            ref_stale_state = ref_exchange["is_anomaly"]
-            ref_anomaly_state = ref_exchange["is_stale"]
-            ref_trust_score = ref_exchange["trust_score"]
 
-            # Check if the target coin is a stable coin. If not get from the "converted_last" field.
-            if ref_target not in self.stable_coins:
-                ref_price = ref_exchange["converted_last"]["usd"]
-            else:
+            # Check that the reference exchange is not in the "excluded_exchanges list". 
+            if ref_exchange_name not in self.excluded_exchanges and ref_exchange_name != "THENA FUSION":
+
+
                 ref_price = ref_exchange["last"]
+                ref_stale_state = ref_exchange["is_anomaly"]
+                ref_anomaly_state = ref_exchange["is_stale"]
+                ref_trust_score = ref_exchange["trust_score"]
 
-
-            # Get the exchange type. Pass the base pair to the function. 
-            # Will return CEX if a ticker is passed. Will return DEX if a contract address is passed.
-            ref_exchange_type = self.get_exchange_type(ref_base)
-            # Create the pair for the reference exchange.
-            ref_pair = f"{ref_base}/{ref_target}"
-
-            
-
-            for j in range(len(exchange_data)):
-                comp_exchange = exchange_data[j]
-                if j == i:
-                    pass
+                # Check if the target coin is a stable coin. If not get from the "converted_last" field.
+                if ref_target not in self.stable_coins:
+                    ref_price = ref_exchange["converted_last"]["usd"]
                 else:
+                    ref_price = ref_exchange["last"]
+
+
+                # Get the exchange type. Pass the base pair to the function. 
+                # Will return CEX if a ticker is passed. Will return DEX if a contract address is passed.
+                ref_exchange_type = self.get_exchange_type(ref_base)
+                # Create the pair for the reference exchange.
+                ref_pair = f"{ref_base}/{ref_target}"
+
+                
+
+                for j in range(len(exchange_data)):
                     comp_exchange = exchange_data[j]
-                    # Get the base and target coin of the coin we are comparing. 
-                    comp_base, comp_target = comp_exchange["base"], comp_exchange["target"]
-                    # Get the name and price from the target exchange.
-                    comp_exchange_name = comp_exchange["market"]["name"]
+                    if j == i:
+                        pass
+                    else:
+                        comp_exchange = exchange_data[j]
+                        # Get the base and target coin of the coin we are comparing. 
+                        comp_base, comp_target = comp_exchange["base"], comp_exchange["target"]
+                        # Get the name and price from the target exchange.
+                        comp_exchange_name = comp_exchange["market"]["name"]
 
 
-                     # Check if either of the exchanges are in the list of "excluded_exchanges"
-                    if ref_exchange_name not in self.excluded_exchanges and comp_exchange_name not in self.excluded_exchanges: 
-                        comp_price = comp_exchange["last"]
-                        # Check if the target coin is a stable coin. If not get from the "converted_last" field.
-                        if comp_target not in self.stable_coins:
-                            comp_price = comp_exchange["converted_last"]["usd"]
-                        else:
+                        # Check if either of the exchanges are in the list of "excluded_exchanges"
+                        if comp_exchange_name not in self.excluded_exchanges: 
                             comp_price = comp_exchange["last"]
+                            # Check if the target coin is a stable coin. If not get from the "converted_last" field.
+                            if comp_target not in self.stable_coins:
+                                comp_price = comp_exchange["converted_last"]["usd"]
+                            else:
+                                comp_price = comp_exchange["last"]
 
-                        comp_pair = f"{comp_base}/{comp_target}"
-                        # Get the exchange type.
-                        comp_exchange_type = self.get_exchange_type(comp_base)
-                        # Create the pair for the target exchange.
-                        comp_pair = f"{comp_base}/{comp_target}"
-                        comp_stale_state = comp_exchange["is_stale"]
-                        comp_anomaly_state = comp_exchange["is_anomaly"]
-                        comp_trust_score = comp_exchange["trust_score"]
+                            comp_pair = f"{comp_base}/{comp_target}"
+                            # Get the exchange type.
+                            comp_exchange_type = self.get_exchange_type(comp_base)
+                            # Create the pair for the target exchange.
+                            comp_pair = f"{comp_base}/{comp_target}"
+                            comp_stale_state = comp_exchange["is_stale"]
+                            comp_anomaly_state = comp_exchange["is_anomaly"]
+                            comp_trust_score = comp_exchange["trust_score"]
 
-                        # Calculate the percentage difference between the comparison exchange and the reference exchange.
-                        perc_diff = ((comp_price - ref_price)/abs(ref_price)) * 100
+                            # Calculate the percentage difference between the comparison exchange and the reference exchange.
+                            perc_diff = ((comp_price - ref_price)/abs(ref_price)) * 100
 
-                        # If perc_diff is greater than "arbitrage_minimum" append the data.
-                        if perc_diff >= arbitrage_minimum:
-                        
-                            data = {
-                                "route_path": f"{ref_exchange_name} -> {comp_exchange_name}   ({ref_exchange_type}):({comp_exchange_type})",
-                                "perc_diff": perc_diff,
-                                "reference_exchange": {
-                                    "exchange_name": ref_exchange_name,
-                                    "pair": ref_pair,
-                                    "price": ref_price,
-                                    "stale": ref_stale_state,
-                                    "anomaly": ref_anomaly_state,
-                                    "trust_score": ref_trust_score
-                                },
-                                "comparison_exchange": {
-                                    "exchange_name": comp_exchange_name,
-                                    "pair": comp_pair,
-                                    "price": comp_price,
-                                    "stale": comp_stale_state,
-                                    "anomaly": comp_anomaly_state,
-                                    "trust_score": comp_trust_score
+                            # If perc_diff is greater than "arbitrage_minimum" append the data.
+                            if perc_diff >= arbitrage_minimum:
+                                data = {
+                                    "time_retrieved": time_retrieved,
+                                    "route_path": f"{ref_exchange_name} -> {comp_exchange_name}   ({ref_exchange_type}):({comp_exchange_type})",
+                                    "perc_diff": perc_diff,
+                                    "reference_exchange": {
+                                        "exchange_name": ref_exchange_name,
+                                        "pair": ref_pair,
+                                        "base": ref_base,
+                                        "target": ref_target,
+                                        "price": ref_price,
+                                        "stale": ref_stale_state,
+                                        "anomaly": ref_anomaly_state,
+                                        "trust_score": ref_trust_score
+                                    },
+                                    "comparison_exchange": {
+                                        "exchange_name": comp_exchange_name,
+                                        "pair": comp_pair,
+                                        "base": comp_base,
+                                        "target": comp_target,
+                                        "price": comp_price,
+                                        "stale": comp_stale_state,
+                                        "anomaly": comp_anomaly_state,
+                                        "trust_score": comp_trust_score
+                                    }
+
                                 }
+                            # Check if a key for the current exchange does not exist yet. 
+                            if ref_exchange_name not in exchanges:
+                                exchanges[ref_exchange_name] = []
 
-                            }
-                        # Check if a key for the current exchange does not exist yet. 
-                        if ref_exchange_name not in exchanges:
-                            exchanges[ref_exchange_name] = []
-
-                        # Only add the value if it is positive.
-                        if perc_diff > 0:
-                            positive_arb += 1
-                            # At append data to the list at the key associated with the exchange. 
-                            exchanges[ref_exchange_name].append(data)
-                        else:
-                            negative_arb += 1
+                            # Only add the value if it is positive.
+                            if perc_diff > 0:
+                                positive_arb += 1
+                                # At append data to the list at the key associated with the exchange. 
+                                exchanges[ref_exchange_name].append(data)
+                            else:
+                                negative_arb += 1
                     
             try:
                 performance = (positive_arb/(positive_arb + negative_arb)) * 100
@@ -202,28 +217,37 @@ class ArbitrageFinderV2:
 
             for k, v in value.items():
                 for i in v["path"]:
-                    x, y = i["reference_exchange"]["pair"].split("/")
-                    if x not in self.excluded_coins and y not in self.excluded_coins:
-                        all_routes.append(i)
+                    
+                    ref_base, ref_target = i["reference_exchange"]["base"], i["reference_exchange"]["target"]
+                    comp_base, comp_target = i["comparison_exchange"]["base"], i["comparison_exchange"]["target"]
+                    if ref_base not in self.excluded_coins and ref_target not in self.excluded_coins:
+                        if comp_base not in self.excluded_coins and comp_target not in self.excluded_coins:
+                            all_routes.append(i)
+
         
         # Sort the routes 
         all_routes = sorted(all_routes, key=lambda x: x["perc_diff"], reverse=True)
         # Get the length to get the total number of routes. 
-        num_of_routes = len(all_routes)
+        self.num_of_routes = len(all_routes)
         # Check if the number of routes is less than the amount of routes requested. 
-        if num_of_routes < limit:
+        if self.num_of_routes < limit:
             # If it is less than, default the value to the length of "all_routes". 
             # This way if the user requests more paths than exist, the whole list will be returned. 
-            limit = num_of_routes
+            limit = self.num_of_routes
 
 
         top_routes = all_routes[:limit]
 
-        print(f"Top: {json.dumps(top_routes, indent=4)}")
+        return top_routes
 
-        print(f"[Total Routes Searched]: {num_of_routes}")
-
-
+    '''-----------------------------------'''
+    def write_top_routes(self, top_routes = None, limit:int = 20):
+        if top_routes == None:
+            print(f"Limit: {limit}")
+            top_routes = self.get_top_routes(limit=limit)
+        
+        with open(arbitrage_text_file, "w") as file:
+            json.dump(top_routes, file, indent=4)
     '''-----------------------------------'''
     def get_exchange_type(self, input_str):
         '''
