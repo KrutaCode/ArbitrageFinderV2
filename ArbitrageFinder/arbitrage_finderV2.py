@@ -68,10 +68,7 @@ class ArbitrageFinderV2:
             ref_exchange_name = ref_exchange["market"]["name"]
 
             # Check that the reference exchange is not in the "excluded_exchanges list". 
-            if ref_exchange_name not in self.excluded_exchanges and ref_exchange_name != "THENA FUSION":
-                if ref_exchange_name == "Upbit":
-                    print("TRUEEEEEEEEEEEEEEEEEEEE")
-
+            if ref_exchange_name not in self.excluded_exchanges:
                 ref_price = ref_exchange["last"]
                 ref_stale_state = ref_exchange["is_anomaly"]
                 ref_anomaly_state = ref_exchange["is_stale"]
